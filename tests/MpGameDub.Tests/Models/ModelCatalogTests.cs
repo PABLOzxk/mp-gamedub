@@ -24,6 +24,16 @@ public class ModelCatalogTests
     }
 
     [Fact]
+    public void Traducao_vem_em_zip_da_release_deste_repositorio()
+    {
+        Assert.True(ModelCatalog.OpusMt.Extract);
+        Assert.Equal("opus-mt-tc-big-en-pt-int8.zip", ModelCatalog.OpusMt.FileName);
+        Assert.Equal("github.com", ModelCatalog.OpusMt.Url.Host);
+        Assert.StartsWith("/PABLOzxk/mp-gamedub/releases/download/", ModelCatalog.OpusMt.Url.AbsolutePath);
+        Assert.Contains(ModelCatalog.OpusMt, ModelCatalog.All);
+    }
+
+    [Fact]
     public void Busca_por_id_ignora_maiusculas()
     {
         Assert.Same(ModelCatalog.WhisperTurbo, ModelCatalog.Find("WHISPER-LARGE-V3-TURBO-Q5_0"));

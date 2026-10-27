@@ -60,6 +60,7 @@ jobs:
     name: Windows (motores de verdade e o .exe)
     runs-on: windows-latest
     needs: opus-mt
+    timeout-minutes: 45
     env:
       MPGAMEDUB_MODELOS: ${{ github.workspace }}\modelos-ci
       MPGAMEDUB_TESTES_PESADOS: "1"
@@ -90,7 +91,9 @@ jobs:
           Copy-Item -Recurse -Force modelos-ci\* publicado\modelos\
           publicado\MpGameDubTeste.exe ajuda
           # Na CPU do CI o Whisper passa do limite de 5 s; com 60 s as falas são dubladas e o teste passa pela voz.
-          publicado\MpGameDubTeste.exe exemplo --cpu --whisper small --max-atraso 60 --opusmt "$env:MPGAMEDUB_OPUSMT"
+          # Sem --opusmt: o programa baixa a tradução da release, confere o SHA-256 e extrai, como no PC do usuário.
+          # O "s" responde à pergunta "Baixar agora?".
+          's' | publicado\MpGameDubTeste.exe exemplo --cpu --whisper small --max-atraso 60
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $relatorio = Get-ChildItem publicado\relatorios -Recurse -Filter relatorio.md | Select-Object -First 1
           Get-Content $relatorio.FullName
