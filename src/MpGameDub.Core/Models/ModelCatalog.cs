@@ -54,9 +54,19 @@ public static class ModelCatalog
         325_508_342,
         "Apache-2.0");
 
+    // Convertido e publicado pelo .github/workflows/modelos.yml deste repositório (ferramentas/exportar-opus-mt.py).
+    public static readonly ModelFile OpusMt = new(
+        "opus-mt-tc-big-en-pt-int8",
+        "Tradução Opus-MT tc-big en-pt, 8 bits (421 MB)",
+        new Uri("https://github.com/PABLOzxk/mp-gamedub/releases/download/modelos-opus-mt-v1/opus-mt-tc-big-en-pt-int8.zip"),
+        "c7dccbaa3ab5bed0a7f14f41a476dc342da0e22f5f52aa19cffcfd49bcf90eba",
+        421_447_752,
+        "CC-BY-4.0",
+        Extract: true);
+
     public static IReadOnlyList<ModelFile> Whisper { get; } = [WhisperTurbo, WhisperSmall, WhisperMedium, WhisperTurbo8];
 
-    public static IReadOnlyList<ModelFile> All { get; } = [SileroVad, .. Whisper, Kokoro];
+    public static IReadOnlyList<ModelFile> All { get; } = [SileroVad, .. Whisper, Kokoro, OpusMt];
 
     public static ModelFile? Find(string id) =>
         All.FirstOrDefault(m => string.Equals(m.Id, id, StringComparison.OrdinalIgnoreCase));

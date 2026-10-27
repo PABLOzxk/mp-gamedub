@@ -26,7 +26,6 @@ internal sealed class LoadedEngines(IVoiceActivityDetector vad, UtteranceProcess
 
 internal static class EngineLoader
 {
-    public const string OpusMtId = "opus-mt-tc-big-en-pt-int8";
     private static readonly ConcurrentQueue<string> NativeLog = new();
     private static bool _runtimeChosen;
 
@@ -53,7 +52,7 @@ internal static class EngineLoader
     {
         var models = new List<ModelFile> { ModelCatalog.SileroVad, options.Whisper };
         if (options.Speak) models.Add(ModelCatalog.Kokoro);
-        if (options.Translate && options.OpusMtFolder is null && ModelCatalog.Find(OpusMtId) is { } opus) models.Add(opus);
+        if (options.Translate && options.OpusMtFolder is null) models.Add(ModelCatalog.OpusMt);
         return models;
     }
 
@@ -119,7 +118,7 @@ internal static class EngineLoader
             ITranslator? translator = null;
             if (options.Translate)
             {
-                var folder = options.OpusMtFolder ?? (ModelCatalog.Find(OpusMtId) is { } opus ? store.PathOf(opus) : Path.Combine(paths.Models, "opus-mt-en-pt"));
+                var folder = options.OpusMtFolder ?? store.PathOf(ModelCatalog.OpusMt);
                 if (File.Exists(Path.Combine(folder, "encoder_model.onnx")))
                 {
                     Ui.Info("Carregando a tradução Opus-MT...");
@@ -129,7 +128,7 @@ internal static class EngineLoader
                 }
                 else
                 {
-                    notes.Add("Tradução desligada: o modelo Opus-MT não está na pasta modelos\\opus-mt-en-pt. A legenda sai em inglês e não há voz.");
+                    notes.Add($"Tradução desligada: o modelo Opus-MT não está em {folder}. A legenda sai em inglês e não há voz.");
                     Ui.Warn("o modelo de tradução não foi encontrado; esta rodada mede só o reconhecimento.");
                 }
             }
