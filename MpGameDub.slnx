@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MpGameDub.Core/MpGameDub.Core.csproj" />
+    <Project Path="src/MpGameDub.Engines/MpGameDub.Engines.csproj" />
+    <Project Path="src/MpGameDub.Windows/MpGameDub.Windows.csproj" />
+    <Project Path="src/MpGameDub.Teste/MpGameDub.Teste.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MpGameDub.Tests/MpGameDub.Tests.csproj" />
+    <Project Path="tests/MpGameDub.Engines.Tests/MpGameDub.Engines.Tests.csproj" />
+  </Folder>
+</Solution>

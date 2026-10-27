@@ -1,0 +1,26 @@
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="KokoroSharp" Version="0.8.4" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.24.4" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime.DirectML" Version="1.24.4" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.24.4" />
+    <PackageVersion Include="Microsoft.ML.Tokenizers" Version="2.0.1" />
+    <!-- O KokoroSharp puxa o NAudio 2.2.1 inteiro (com Windows Forms) só para tocar som, o que não usamos.
+         O programa exclui esses pacotes; as versões ficam aqui para a exclusão valer. -->
+    <PackageVersion Include="NAudio" Version="2.2.1" />
+    <PackageVersion Include="NAudio.Asio" Version="2.2.1" />
+    <PackageVersion Include="NAudio.Midi" Version="2.2.1" />
+    <PackageVersion Include="NAudio.WinForms" Version="2.2.1" />
+    <PackageVersion Include="NAudio.WinMM" Version="2.2.1" />
+    <PackageVersion Include="NAudio.Core" Version="3.3.0" />
+    <PackageVersion Include="NAudio.Wasapi" Version="3.3.0" />
+    <PackageVersion Include="System.Diagnostics.PerformanceCounter" Version="10.0.13" />
+    <PackageVersion Include="Whisper.net" Version="1.9.1" />
+    <PackageVersion Include="Whisper.net.Runtime" Version="1.9.1" />
+    <PackageVersion Include="Whisper.net.Runtime.Vulkan" Version="1.9.1" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+</Project>

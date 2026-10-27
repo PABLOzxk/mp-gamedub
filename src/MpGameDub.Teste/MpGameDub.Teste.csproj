@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Sem versão no TFM: evita os 25 MB das projeções WinRT, que não usamos. A captura confere a build na hora. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <AssemblyName>MpGameDubTeste</AssemblyName>
+    <Version>0.1.0</Version>
+    <Product>MP GameDub - teste da Fase 0</Product>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <SatelliteResourceLanguages>pt-BR</SatelliteResourceLanguages>
+    <!-- O NAudio.WinForms (do NAudio 2, excluído abaixo) pediria o Windows Forms inteiro no pacote. -->
+    <DisableTransitiveFrameworkReferences>true</DisableTransitiveFrameworkReferences>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MpGameDub.Core\MpGameDub.Core.csproj" />
+    <ProjectReference Include="..\MpGameDub.Engines\MpGameDub.Engines.csproj" />
+    <ProjectReference Include="..\MpGameDub.Windows\MpGameDub.Windows.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Bibliotecas nativas: ONNX Runtime com DirectML (voz e tradução na placa sem CUDA) e o whisper.cpp
+         para CPU e Vulkan (o driver da NVIDIA já traz o Vulkan). -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" />
+    <PackageReference Include="Whisper.net.Runtime" />
+    <PackageReference Include="Whisper.net.Runtime.Vulkan" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Ver Directory.Packages.props: o NAudio 2 do KokoroSharp fica de fora; a captura e a saída usam o NAudio 3. -->
+    <PackageReference Include="NAudio" ExcludeAssets="all" PrivateAssets="all" />
+    <PackageReference Include="NAudio.Asio" ExcludeAssets="all" PrivateAssets="all" />
+    <PackageReference Include="NAudio.Midi" ExcludeAssets="all" PrivateAssets="all" />
+    <PackageReference Include="NAudio.WinForms" ExcludeAssets="all" PrivateAssets="all" />
+    <PackageReference Include="NAudio.WinMM" ExcludeAssets="all" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- O KokoroSharp só copia as vozes no build; na publicação vão só as três de português e a licença. -->
+    <Content Include="$(NuGetPackageRoot)kokorosharp/0.8.4/content/voices/pf_dora.npy;$(NuGetPackageRoot)kokorosharp/0.8.4/content/voices/pm_alex.npy;$(NuGetPackageRoot)kokorosharp/0.8.4/content/voices/pm_santa.npy"
+             Link="voices/%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" CopyToOutputDirectory="Never" />
+    <Content Include="$(NuGetPackageRoot)kokorosharp/0.8.4/content/voices/LICENSE" Link="voices/LICENSE" CopyToPublishDirectory="PreserveNewest" CopyToOutputDirectory="Never" />
+    <Content Include="..\..\assets\exemplo.wav" Link="exemplo.wav" CopyToPublishDirectory="PreserveNewest" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\assets\exemplo.wav')" />
+    <Content Include="..\..\LEIA-ME.txt;..\..\NOTICE.md;..\..\LICENSE" CopyToPublishDirectory="PreserveNewest" CopyToOutputDirectory="Never" />
+  </ItemGroup>
+  <!-- Só o que roda num Windows x64: tira as bibliotecas de Linux, ARM e x86 e a camada de depuração do DirectML. -->
+  <Target Name="TrimPublishedFiles" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+        Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').Replace('\','/').StartsWith('runtimes/vulkan/linux-x64/'))
+                or $([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').Replace('\','/').StartsWith('runtimes/win-arm64/'))
+                or $([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').Replace('\','/').StartsWith('runtimes/win-x86/'))
+                or $([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('DirectML.Debug'))
+                or '%(ResolvedFileToPublish.RelativePath)' == 'DirectML.pdb'" />
+    </ItemGroup>
+  </Target>
+</Project>

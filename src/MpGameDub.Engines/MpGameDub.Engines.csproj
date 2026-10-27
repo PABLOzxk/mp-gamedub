@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MpGameDub.Core\MpGameDub.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Só a API. A biblioteca nativa (CPU ou DirectML) vem do programa que usa os motores. -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" />
+    <PackageReference Include="Microsoft.ML.Tokenizers" />
+    <PackageReference Include="Whisper.net" />
+    <PackageReference Include="KokoroSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MpGameDub.Engines.Tests" />
+  </ItemGroup>
+</Project>

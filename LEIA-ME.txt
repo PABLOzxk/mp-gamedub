@@ -1,0 +1,70 @@
+MP GameDub, teste da Fase 0
+===========================
+
+Este programa mede se dá para traduzir e dublar em português as falas de um jogo,
+no seu PC, rápido o bastante para jogar. Ele não é o aplicativo final: é a régua.
+
+O que ele faz e o que não faz
+- Ouve só o som do jogo, pelo próprio Windows (a mesma captura que programas de
+  gravação usam). Não injeta nada no jogo, não lê a memória dele e não pede
+  administrador. Anti-cheat não tem o que ver.
+- Não manda nada para a internet. A única conexão é o download dos modelos na
+  primeira vez (github.com, raw.githubusercontent.com e huggingface.co), e cada
+  arquivo é conferido pelo SHA-256 antes de ser usado.
+- Só grava o som do jogo quando você manda, e o arquivo fica no seu PC.
+
+Antes de começar
+1. Windows 11 (ou Windows 10 build 20348 ou mais nova).
+2. Driver da NVIDIA atualizado (ele traz o Vulkan, que o reconhecimento usa).
+3. Visual C++ Redistributable 2015-2022 x64. Se o programa reclamar de
+   MSVCP140.dll ou VCRUNTIME140.dll, instale de:
+   https://aka.ms/vs/17/release/vc_redist.x64.exe
+4. Uns 2 GB livres para os modelos (pasta modelos\ ao lado do programa).
+
+Passo a passo
+1. Extraia o .zip numa pasta só dele, por exemplo C:\MpGameDub.
+2. Abra MpGameDubTeste.exe. O Windows pode mostrar "O Windows protegeu o
+   computador" porque o programa não é assinado: clique em "Mais informações"
+   e "Executar assim mesmo".
+3. Opção 1, "Testar com o áudio de exemplo". Na primeira vez ele baixa os
+   modelos (cerca de 1,2 GB). No fim, abra a pasta que ele mostrar e ouça o
+   dublado.wav. Se isso funcionar, o resto funciona.
+4. Opção 2, "Gravar o som de um jogo". Abra o jogo antes, escolha ele na lista
+   e jogue de 5 a 10 minutos de um trecho com bastante fala em inglês.
+   Aperte Enter para parar.
+5. Opção 3, "Processar uma gravação". Escolha a gravação. Saem:
+   - relatorio.md: os números e se as metas passaram (abre no Bloco de Notas);
+   - dublado.wav: o jogo com a voz traduzida por cima, para você ouvir;
+   - falas.csv: cada fala, com os tempos (abre no Excel);
+   - legendas.srt: a tradução no tempo das falas.
+6. Opção 5, "Ao vivo". Jogue com a legenda e a voz ligadas. Antes, meça o
+   1% low do jogo com o programa FECHADO, num trecho que dê para repetir
+   (o benchmark do jogo é o ideal). O NVIDIA FrameView, grátis, grava o 1% low;
+   o benchmark de muitos jogos também mostra. Depois meça de novo no mesmo
+   trecho com o ao vivo ligado. O programa pergunta os dois números no fim.
+   Se você só tiver o FPS médio (o contador do Steam, por exemplo), use o
+   médio nos dois casos e avise: é uma comparação mais fraca, mas já serve.
+7. Mande a pasta relatorios\ (os .wav são opcionais) e diga, ouvindo o
+   dublado.wav, quantas de 20 falas você entendeu e se aguentaria a voz por uma
+   hora.
+
+Metas da Fase 0 (o relatório marca as que ele consegue medir)
+- 95% das falas curtas com a voz começando até 3,5 s depois do fim da fala.
+- 1% low do jogo cai no máximo 10% com a IA ligada.
+- Pelo menos 15 de 20 falas compreensíveis.
+- Voz aceitável para jogar uma hora.
+
+Opções úteis (menu, opção 7, ou na linha de comando)
+- Trocar o Whisper: turbo (padrão), turbo8, medium, small.
+- Voz: pf_dora (feminina), pm_alex ou pm_santa (masculinas).
+- Só legenda, sem voz.
+- Rodar tudo no processador, para comparar com a placa.
+
+Se der erro
+- O programa grava erro.txt ao lado dele. Mande esse arquivo.
+- Se ele fechar com o jogo baixo, o volume é devolvido na próxima vez que você
+  abrir o programa. Dá também para devolver à mão no Mixer de Volume do Windows.
+
+Para desinstalar, apague a pasta. Nada fica no registro. O único arquivo fora da
+pasta é %LOCALAPPDATA%\MpGameDub\volume-original.json, que só existe enquanto o
+volume do jogo está abaixado.
