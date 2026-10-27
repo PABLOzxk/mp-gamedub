@@ -84,3 +84,34 @@ public class KokoroSpeedTests
         Assert.True(Math.Abs(speech.Samples[0]) > 1e-4f);
     }
 }
+
+public class KokoroConcurrencyTests
+{
+    // O CI quebrou com duas vozes fonemizando ao mesmo tempo pela primeira vez: o KokoroSharp guarda o fonemizador
+    // de cada idioma e a lista de vozes em coleções estáticas sem trava. O teste cria as vozes juntas e limpa o
+    // cache do fonemizador antes de cada rodada, para repetir a "primeira vez".
+    [HeavyFact]
+    public async Task Vozes_em_paralelo_na_primeira_fala_nao_corrompem_o_cache_do_kokoro()
+    {
+        var model = await TestModels.GetAsync(ModelCatalog.Kokoro);
+        var cache = typeof(KokoroSharp.Processing.Tokenizer).GetField("espeakG2Ps", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)?.GetValue(null) as System.Collections.IDictionary;
+        Assert.NotNull(cache);
+        string[] lines = ["Recarregando!", "Me dá cobertura.", "Eles estão vindo.", "Abaixa!"];
+
+        for (var round = 0; round < 3; round++)
+        {
+            var voices = await Task.WhenAll(Enumerable.Range(0, 4).Select(i => Task.Run(() =>
+                new KokoroSynthesizer(model, i % 2 == 0 ? "pf_dora" : "pm_alex", ComputeDevice.Cpu, cpuThreads: 1))));
+            try
+            {
+                lock (KokoroSynthesizer.SharedState) cache.Clear();
+                var speech = await Task.WhenAll(voices.Select((v, i) => Task.Run(() => v.SynthesizeAsync(lines[i], CancellationToken.None))));
+                Assert.All(speech, s => Assert.True(s.Samples.Length > 0));
+            }
+            finally
+            {
+                foreach (var v in voices) v.Dispose();
+            }
+        }
+    }
+}

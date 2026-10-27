@@ -14,6 +14,10 @@ public sealed class KokoroSynthesizer : ISpeechSynthesizer
     public const int SampleRate = 24000;
     private const float SilenceFloor = 1e-4f;
 
+    // O Tokenizer e o KokoroVoiceManager do KokoroSharp são estáticos e guardam caches em Dictionary/List sem trava
+    // (o fonemizador do eSpeak por idioma, a lista de vozes). Duas vozes ao mesmo tempo corrompem esses caches.
+    internal static readonly Lock SharedState = new();
+
     private readonly KokoroEngine _engine;
     private readonly KokoroVoice _voice;
     private readonly KokoroTTSPipelineConfig _config = new(new DefaultSegmentationConfig { MaxFirstSegmentLength = 510 });
@@ -23,7 +27,7 @@ public sealed class KokoroSynthesizer : ISpeechSynthesizer
     {
         Name = $"Kokoro {voice} ({(device == ComputeDevice.Gpu ? "placa" : "CPU")})";
         _engine = new KokoroEngine(modelPath, OnnxSessions.Create(device, cpuThreads));
-        _voice = KokoroVoiceManager.GetVoice(voice);
+        lock (SharedState) _voice = KokoroVoiceManager.GetVoice(voice);
     }
 
     public string Name { get; }
@@ -33,7 +37,8 @@ public sealed class KokoroSynthesizer : ISpeechSynthesizer
         await _gate.WaitAsync(ct);
         try
         {
-            var tokens = Tokenizer.Tokenize(text.Trim(), _voice.GetLangCode(), _config.PreprocessText);
+            int[] tokens;
+            lock (SharedState) tokens = Tokenizer.Tokenize(text.Trim(), _voice.GetLangCode(), _config.PreprocessText);
             var segments = _config.SegmentationFunc(tokens);
             if (segments.Count == 0) return new SynthesizedSpeech([], SampleRate);
 
