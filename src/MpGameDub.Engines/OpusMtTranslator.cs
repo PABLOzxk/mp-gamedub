@@ -4,14 +4,16 @@ using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Tokenizers;
 using MpGameDub.Core.Speech;
+using MpGameDub.Core.Text;
 
 namespace MpGameDub.Engines;
 
 /// <summary>
 /// Tradução Opus-MT (Marian) exportada para ONNX pelo Optimum (ferramentas/exportar-opus-mt.py), com o cache de
 /// atenção do decodificador: decoder_model no primeiro passo, decoder_with_past_model nos seguintes. Busca gulosa,
-/// mais rápida que a busca em feixe e boa o bastante para frases curtas de jogo. O tc-big en-pt pede o código do
-/// idioma de destino na frente do texto: "&gt;&gt;pob&lt;&lt;" é português do Brasil, "&gt;&gt;por&lt;&lt;" o de Portugal.
+/// mais rápida que a busca em feixe e boa o bastante para frases curtas de jogo. Traduz uma frase por vez (ver
+/// SentenceSplitter). O tc-big en-pt pede o código do idioma de destino na frente do texto: "&gt;&gt;pob&lt;&lt;" é
+/// português do Brasil, "&gt;&gt;por&lt;&lt;" o de Portugal.
 /// </summary>
 public sealed partial class OpusMtTranslator : ITranslator
 {
@@ -89,7 +91,12 @@ public sealed partial class OpusMtTranslator : ITranslator
 
     private string Translate(string text, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(text)) return "";
+        var sentences = SentenceSplitter.Split(LanguageCode().Replace(text, ""));
+        return string.Join(' ', sentences.Select(s => TranslateSentence(s, ct)).Where(t => t.Length > 0));
+    }
+
+    private string TranslateSentence(string text, CancellationToken ct)
+    {
         var input = Encode(text);
         var length = input.Length;
         var inputIds = new DenseTensor<long>(input.Select(i => (long)i).ToArray(), [1, length]);

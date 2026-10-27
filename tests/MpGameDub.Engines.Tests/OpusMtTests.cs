@@ -1,11 +1,12 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MpGameDub.Core.Text;
 
 namespace MpGameDub.Engines.Tests;
 
 /// <summary>
 /// Confere o tradutor contra a referência que ferramentas/exportar-opus-mt.py grava junto com o modelo:
-/// mesmos ids do tokenizador do transformers e mesma tradução gulosa com os mesmos arquivos ONNX.
+/// mesmos ids do tokenizador do transformers, mesma divisão em frases e mesma tradução gulosa com os mesmos arquivos ONNX.
 /// Roda quando MPGAMEDUB_OPUSMT aponta para a pasta exportada (o CI de modelos faz isso).
 /// </summary>
 public class OpusMtTests
@@ -18,6 +19,13 @@ public class OpusMtTests
         using var translator = new OpusMtTranslator(Folder!, ComputeDevice.Cpu, cpuThreads: 4);
         foreach (var item in Reference())
             Assert.Equal(item.Ids, translator.Encode(item.Text));
+    }
+
+    [OpusMtFact]
+    public void Divide_as_frases_igual_ao_script_de_exportacao()
+    {
+        foreach (var item in Reference())
+            Assert.Equal(item.Sentences, SentenceSplitter.Split(item.Text));
     }
 
     [OpusMtFact]
@@ -41,6 +49,7 @@ public class OpusMtTests
     private sealed record Entry(
         [property: JsonPropertyName("texto")] string Text,
         [property: JsonPropertyName("ids")] int[] Ids,
+        [property: JsonPropertyName("frases")] string[] Sentences,
         [property: JsonPropertyName("traducao")] string Translation);
 }
 

@@ -3,12 +3,14 @@
 Uso: python ferramentas/exportar-opus-mt.py <pasta-de-saida>
 
 Saída: encoder_model.onnx, decoder_model.onnx, decoder_with_past_model.onnx (8 bits), source.spm, target.spm,
-vocab.json, config.json, LICENCA.txt e referencia.json. A referência traz, para cada frase, os ids que o tokenizador
-do transformers gera e a tradução gulosa feita com os mesmos arquivos ONNX, pelo mesmo algoritmo do
-OpusMtTranslator.cs; o teste do C# tem que bater com as duas.
+vocab.json, config.json, LICENCA.txt e referencia.json. A referência traz, para cada fala, os ids que o tokenizador
+do transformers gera, as frases em que ela é dividida e a tradução gulosa feita com os mesmos arquivos ONNX, pelo
+mesmo algoritmo do OpusMtTranslator.cs; o teste do C# tem que bater com as três. "traducao_inteira" (a fala de uma
+vez, sem dividir) fica só para comparar no log.
 """
 
 import json
+import re
 import shutil
 import sys
 import tempfile
@@ -35,20 +37,43 @@ FRASES = [
     "If you see the Witcher, tell him the contract is cancelled.",
     "Reload! I'm out of ammo!",
     "We found the key, but the door on the third floor is still locked.",
+    "Mr. Smith is waiting for us. Hurry!",
+    "Wait... did you hear that?",
 ]
+
+# Igual ao SentenceSplitter.cs: o Opus-MT aprendeu frase a frase e, com duas juntas, costuma engolir a curta.
+ABREVIACOES = {"mr", "mrs", "ms", "dr", "jr", "sr", "st", "lt", "sgt", "capt", "col", "gen", "prof", "vs"}
+FIM_DE_FRASE = re.compile(r"[.!?…]+[\"'”’)\]]*(?=\s)")
+FECHAMENTOS = "\"'”’)]"
+
+
+def dividir_frases(texto: str) -> list[str]:
+    frases, inicio = [], 0
+    for fim in FIM_DE_FRASE.finditer(texto):
+        comeco_palavra = fim.start()
+        while comeco_palavra > 0 and texto[comeco_palavra - 1].isalpha():
+            comeco_palavra -= 1
+        palavra = texto[comeco_palavra:fim.start()].lower()
+        if fim.group(0).rstrip(FECHAMENTOS) == "." and palavra in ABREVIACOES:
+            continue
+        frases.append(texto[inicio:fim.end()].strip())
+        inicio = fim.end()
+    frases.append(texto[inicio:].strip())
+    return [f for f in frases if f]
 
 
 def limite_de_passos(tamanho: int) -> int:
     return min(512, 2 * tamanho + 16)  # igual ao OpusMtTranslator.MaxSteps
 
 
-def traduzir_onnx(pasta: Path, ids: list[int], config: dict) -> list[int]:
+def abrir_sessoes(pasta: Path) -> list[ort.InferenceSession]:
     opcoes = ort.SessionOptions()
     opcoes.intra_op_num_threads = 4
-    enc = ort.InferenceSession(str(pasta / "encoder_model.onnx"), opcoes, providers=["CPUExecutionProvider"])
-    dec = ort.InferenceSession(str(pasta / "decoder_model.onnx"), opcoes, providers=["CPUExecutionProvider"])
-    past_dec = ort.InferenceSession(str(pasta / "decoder_with_past_model.onnx"), opcoes, providers=["CPUExecutionProvider"])
+    return [ort.InferenceSession(str(pasta / nome), opcoes, providers=["CPUExecutionProvider"]) for nome in ARQUIVOS]
 
+
+def traduzir_onnx(sessoes: list[ort.InferenceSession], ids: list[int], config: dict) -> list[int]:
+    enc, dec, past_dec = sessoes
     entrada = np.array([ids], dtype=np.int64)
     mascara = np.ones_like(entrada)
     oculto = enc.run(None, {"input_ids": entrada, "attention_mask": mascara})[0]
@@ -98,18 +123,30 @@ def main() -> None:
     assert config["decoder_start_token_id"] == config["pad_token_id"], "Marian começa pelo token de preenchimento"
 
     modelo = MarianMTModel.from_pretrained(MODELO, revision=REVISAO).eval()
+    sessoes = abrir_sessoes(destino)
+
+    def onnx(texto: str) -> str:
+        return tokenizador.decode(traduzir_onnx(sessoes, tokenizador(f"{CODIGO} {texto}").input_ids, config),
+                                  skip_special_tokens=True)
+
+    def pytorch(texto: str) -> str:
+        gerado = modelo.generate(**tokenizador([f"{CODIGO} {texto}"], return_tensors="pt"), num_beams=1, do_sample=False)
+        return tokenizador.decode(gerado[0], skip_special_tokens=True)
+
     referencia = []
-    for frase in FRASES:
-        ids = tokenizador(f"{CODIGO} {frase}").input_ids
-        gerado = traduzir_onnx(destino, ids, config)
-        pytorch = modelo.generate(**tokenizador([f"{CODIGO} {frase}"], return_tensors="pt"), num_beams=1, do_sample=False)
+    for fala in FRASES:
+        frases = dividir_frases(fala)
         referencia.append({
-            "texto": frase,
-            "ids": ids,
-            "traducao": tokenizador.decode(gerado, skip_special_tokens=True),
-            "traducao_pytorch_fp32": tokenizador.decode(pytorch[0], skip_special_tokens=True),
+            "texto": fala,
+            "ids": tokenizador(f"{CODIGO} {fala}").input_ids,
+            "frases": frases,
+            "traducao": " ".join(t for t in map(onnx, frases) if t),
+            "traducao_pytorch_fp32": " ".join(t for t in map(pytorch, frases) if t),
+            "traducao_inteira": onnx(fala),
         })
-        print(f"{frase}\n  onnx 8 bits: {referencia[-1]['traducao']}\n  pytorch fp32: {referencia[-1]['traducao_pytorch_fp32']}")
+        r = referencia[-1]
+        print(f"{fala}\n  frase a frase, onnx 8 bits: {r['traducao']}\n  frase a frase, pytorch fp32: "
+              f"{r['traducao_pytorch_fp32']}\n  inteira, onnx 8 bits: {r['traducao_inteira']}")
 
     (destino / "referencia.json").write_text(json.dumps(referencia, ensure_ascii=False, indent=2), encoding="utf-8")
     (destino / "LICENCA.txt").write_text(
