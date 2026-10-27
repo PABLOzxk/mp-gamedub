@@ -56,6 +56,14 @@ internal sealed record RunOptions
     public int CpuThreads { get; init; } = Math.Clamp(Environment.ProcessorCount / 2, 2, 8);
     public bool Record { get; init; }
 
+    /// <summary>
+    /// Prazo de cada etapa (reconhecimento, tradução, voz) antes de cortar a fala. Nunca menos de 15 s, para um motor
+    /// lento ainda ser medido, e nunca menos que o --max-atraso, para não cortar uma fala que ainda sairia a tempo.
+    /// </summary>
+    public TimeSpan StageTimeout => MaxAge > MinStageTimeout ? MaxAge : MinStageTimeout;
+
+    private static readonly TimeSpan MinStageTimeout = TimeSpan.FromSeconds(15);
+
     public string ShortName => $"{WhisperChoices.First(p => p.Value == Whisper).Key}{(CpuOnly ? "-cpu" : "")}{(Speak ? "-" + Voice : "-legenda")}";
 
     /// <summary>Lê as opções conhecidas e devolve o resto (comando e argumentos posicionais).</summary>

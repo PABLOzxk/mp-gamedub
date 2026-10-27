@@ -24,6 +24,8 @@ internal static class OnnxSessions
             GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
             IntraOpNumThreads = cpuThreads,
             InterOpNumThreads = 1,
+            // Sem isto, o console enche de avisos normais do DirectML ("nós atribuídos à CPU") antes da primeira fala.
+            LogSeverityLevel = OrtLoggingLevel.ORT_LOGGING_LEVEL_ERROR,
         };
         if (device == ComputeDevice.Gpu)
         {

@@ -24,7 +24,7 @@ internal static class BatchCommand
         Ui.Info($"{Ui.Clock(clip.Duration)} de áudio, {clip.SampleRate} Hz, {clip.Channels} canal(is).");
 
         using var monitor = new ResourceMonitor();
-        using var engines = EngineLoader.Load(options, paths);
+        using var engines = await EngineLoader.LoadAsync(options, paths);
         var progress = new Progress<string>(text => Ui.Info("  " + text));
         var batch = new BatchOptions { Stale = new StalePolicyOptions { MaxAge = options.MaxAge } };
         var result = await BatchRunner.RunAsync(clip, engines.Vad, engines.Processor, batch, progress, CancellationToken.None);
@@ -81,20 +81,23 @@ internal static class BatchCommand
         return new BatchSummary(engines.Processor.Engines.Describe(), shortOnes, result.Traces.Count, voiced.Count, resources.PeakVramMb, share, folder);
     }
 
-    /// <summary>Roda a mesma gravação com cada Whisper e junta os números numa tabela.</summary>
     /// <summary>Explica um "0 dubladas" causado por atraso, que sozinho parece defeito do programa.</summary>
     private static string? LateHint(IReadOnlyList<UtteranceTrace> traces, RunOptions options)
     {
         if (traces.Any(t => t.EndToVoiceMs is not null)) return null;
+        var timedOut = traces.Count(t => t.Dropped?.StartsWith(UtteranceProcessor.TimedOut, StringComparison.Ordinal) == true);
         var late = traces.Where(t => t.Dropped is StalePolicy.TooOld or StalePolicy.Overtaken).ToList();
-        if (late.Count == 0) return null;
-        var asr = LatencyStats.Summarize(late.Select(t => t.AsrMs));
-        return $"Nenhuma fala saiu a tempo: o Whisper levou {Ui.Seconds(asr.P50)} por fala (mediana), e uma fala é descartada "
-             + $"quando a voz começaria mais de {options.MaxAge.TotalSeconds.ToString("0", Ui.Br)} s depois do fim dela. Se a biblioteca "
-             + "do Whisper carregada foi Cpu, a placa de vídeo não foi usada (veja motores.log). Para ouvir a voz mesmo assim, "
-             + "rode de novo com --max-atraso 60.";
+        if (timedOut == 0 && late.Count == 0) return null;
+        var cause = timedOut > 0
+            ? $"{timedOut} de {traces.Count} falas passaram de {options.StageTimeout.TotalSeconds.ToString("0", Ui.Br)} s numa etapa e foram cortadas (o motivo de cada uma está em falas.csv)"
+            : $"o Whisper levou {Ui.Seconds(LatencyStats.Summarize(late.Select(t => t.AsrMs)).P50)} por fala (mediana), e uma fala é descartada "
+              + $"quando a voz começaria mais de {options.MaxAge.TotalSeconds.ToString("0", Ui.Br)} s depois do fim dela";
+        return $"Nenhuma fala saiu a tempo: {cause}. Se a biblioteca do Whisper carregada foi Cpu, a placa de vídeo não foi usada "
+             + "(veja motores.log); só no processador, o Whisper turbo é lento demais, e o --whisper small é o que dá. "
+             + "Para ouvir a voz mesmo assim, rode de novo com --max-atraso 60.";
     }
 
+    /// <summary>Roda a mesma gravação com cada Whisper e junta os números numa tabela.</summary>
     public static async Task CompareAsync(string wavPath, RunOptions options, AppPaths paths)
     {
         var all = RunOptions.WhisperChoices.Values.Select(w => options with { Whisper = w }).ToList();

@@ -8,7 +8,6 @@ public sealed record BatchOptions
 {
     public SegmenterOptions Segmenter { get; init; } = new();
     public StalePolicyOptions Stale { get; init; } = new();
-    public TimeSpan StageTimeout { get; init; } = TimeSpan.FromSeconds(15);
 }
 
 public sealed record BatchResult(
