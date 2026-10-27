@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes-linux:
+    name: Testes (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Testes rápidos e o detector de fala com o modelo real
+        run: |
+          dotnet test tests/MpGameDub.Tests -c Release
+          dotnet test tests/MpGameDub.Engines.Tests -c Release
+
+  opus-mt:
+    name: Converter o Opus-MT para ONNX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: opus-mt-en-pt
+          key: opus-mt-${{ hashFiles('ferramentas/exportar-opus-mt.py', 'ferramentas/requisitos-exportacao.txt') }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - if: steps.cache.outputs.cache-hit != 'true'
+        name: Exportar e quantizar
+        run: |
+          pip install -r ferramentas/requisitos-exportacao.txt
+          python ferramentas/exportar-opus-mt.py opus-mt-en-pt
+      - name: Tamanho, hash e referência
+        run: |
+          ls -la opus-mt-en-pt
+          cat opus-mt-en-pt/referencia.json
+      - uses: actions/upload-artifact@v6
+        with:
+          name: opus-mt-en-pt
+          path: opus-mt-en-pt
+          retention-days: 14
+
+  windows:
+    name: Windows (motores de verdade e o .exe)
+    runs-on: windows-latest
+    needs: opus-mt
+    env:
+      MPGAMEDUB_MODELOS: ${{ github.workspace }}\modelos-ci
+      MPGAMEDUB_TESTES_PESADOS: "1"
+      MPGAMEDUB_OPUSMT: ${{ github.workspace }}\opus-mt-en-pt
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: modelos-ci
+          key: modelos-${{ hashFiles('src/MpGameDub.Core/Models/ModelCatalog.cs') }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: opus-mt-en-pt
+          path: opus-mt-en-pt
+      - name: Todos os testes (Whisper, Kokoro e Opus-MT na CPU)
+        run: |
+          dotnet test tests/MpGameDub.Tests -c Release
+          dotnet test tests/MpGameDub.Engines.Tests -c Release --logger "console;verbosity=normal"
+      - name: Publicar o programa
+        run: dotnet publish src/MpGameDub.Teste -c Release -o publicado
+      - name: Rodar o exemplo de ponta a ponta na CPU
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force publicado\modelos | Out-Null
+          Copy-Item -Recurse -Force modelos-ci\* publicado\modelos\
+          publicado\MpGameDubTeste.exe ajuda
+          publicado\MpGameDubTeste.exe exemplo --cpu --whisper small --opusmt "$env:MPGAMEDUB_OPUSMT"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $relatorio = Get-ChildItem publicado\relatorios -Recurse -Filter relatorio.md | Select-Object -First 1
+          Get-Content $relatorio.FullName
+      - uses: actions/upload-artifact@v6
+        with:
+          name: relatorio-exemplo
+          path: publicado/relatorios
+          retention-days: 14
+      - name: Empacotar sem modelos, relatórios nem gravações
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force publicado\modelos, publicado\relatorios -ErrorAction SilentlyContinue
+          Compress-Archive -Path publicado\* -DestinationPath MpGameDubTeste-win-x64.zip
+      - uses: actions/upload-artifact@v6
+        with:
+          name: MpGameDubTeste-win-x64
+          path: MpGameDubTeste-win-x64.zip
+          retention-days: 30

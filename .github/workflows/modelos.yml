@@ -1,0 +1,50 @@
+name: Publicar o Opus-MT convertido
+
+# Roda só à mão. Converte o Opus-MT, mostra tamanho e SHA-256 e, se "publicar" for marcado,
+# cria a release de onde o programa baixa a tradução. O hash vai depois para ModelCatalog.cs.
+on:
+  workflow_dispatch:
+    inputs:
+      publicar:
+        description: Criar a release com o zip
+        type: boolean
+        default: false
+      tag:
+        description: Nome da release
+        default: modelos-opus-mt-v1
+
+permissions:
+  contents: write
+
+jobs:
+  exportar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Exportar e quantizar
+        run: |
+          pip install -r ferramentas/requisitos-exportacao.txt
+          python ferramentas/exportar-opus-mt.py opus-mt-en-pt
+      - name: Zip determinístico, tamanho e SHA-256
+        run: |
+          cd opus-mt-en-pt
+          find . -type f -exec touch -d "2026-01-01 00:00:00" {} +
+          find . -type f | sed 's|^\./||' | LC_ALL=C sort | zip -X -9 -@ ../opus-mt-tc-big-en-pt-int8.zip
+          cd ..
+          stat -c "%s bytes" opus-mt-tc-big-en-pt-int8.zip
+          sha256sum opus-mt-tc-big-en-pt-int8.zip | tee opus-mt-tc-big-en-pt-int8.zip.sha256
+      - uses: actions/upload-artifact@v6
+        with:
+          name: opus-mt-tc-big-en-pt-int8
+          path: opus-mt-tc-big-en-pt-int8.zip*
+      - if: inputs.publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.tag }}" opus-mt-tc-big-en-pt-int8.zip opus-mt-tc-big-en-pt-int8.zip.sha256 \
+            --title "Opus-MT tc-big en-pt em ONNX (8 bits)" \
+            --notes "Helsinki-NLP/opus-mt-tc-big-en-pt (CC-BY-4.0), convertido com ferramentas/exportar-opus-mt.py. SHA-256 no arquivo .sha256." \
+            --prerelease
