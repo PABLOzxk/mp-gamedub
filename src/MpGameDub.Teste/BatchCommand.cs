@@ -92,8 +92,8 @@ internal static class BatchCommand
             ? $"{timedOut} de {traces.Count} falas passaram de {options.StageTimeout.TotalSeconds.ToString("0", Ui.Br)} s numa etapa e foram cortadas (o motivo de cada uma está em falas.csv)"
             : $"o Whisper levou {Ui.Seconds(LatencyStats.Summarize(late.Select(t => t.AsrMs)).P50)} por fala (mediana), e uma fala é descartada "
               + $"quando a voz começaria mais de {options.MaxAge.TotalSeconds.ToString("0", Ui.Br)} s depois do fim dela";
-        return $"Nenhuma fala saiu a tempo: {cause}. Se a biblioteca do Whisper carregada foi Cpu, a placa de vídeo não foi usada "
-             + "(veja motores.log); só no processador, o Whisper turbo é lento demais, e o --whisper small é o que dá. "
+        return $"Nenhuma fala saiu a tempo: {cause}. Se a nota \"Biblioteca do Whisper carregada\" diz Cpu, a placa de vídeo não foi "
+             + "usada; só no processador, o Whisper turbo é lento demais, e o --whisper small é o que dá. "
              + "Para ouvir a voz mesmo assim, rode de novo com --max-atraso 60.";
     }
 
