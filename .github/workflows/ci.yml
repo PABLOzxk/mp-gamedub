@@ -89,10 +89,13 @@ jobs:
           New-Item -ItemType Directory -Force publicado\modelos | Out-Null
           Copy-Item -Recurse -Force modelos-ci\* publicado\modelos\
           publicado\MpGameDubTeste.exe ajuda
-          publicado\MpGameDubTeste.exe exemplo --cpu --whisper small --opusmt "$env:MPGAMEDUB_OPUSMT"
+          # Na CPU do CI o Whisper passa do limite de 5 s; com 60 s as falas são dubladas e o teste passa pela voz.
+          publicado\MpGameDubTeste.exe exemplo --cpu --whisper small --max-atraso 60 --opusmt "$env:MPGAMEDUB_OPUSMT"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $relatorio = Get-ChildItem publicado\relatorios -Recurse -Filter relatorio.md | Select-Object -First 1
           Get-Content $relatorio.FullName
+          if ((Get-Content $relatorio.FullName -Raw) -notmatch '- Dubladas: [1-9]') { Write-Error 'nenhuma fala do exemplo foi dublada'; exit 1 }
+          if (-not (Test-Path (Join-Path $relatorio.DirectoryName 'dublado.wav'))) { Write-Error 'o exemplo não gerou o dublado.wav'; exit 1 }
       - uses: actions/upload-artifact@v6
         with:
           name: relatorio-exemplo

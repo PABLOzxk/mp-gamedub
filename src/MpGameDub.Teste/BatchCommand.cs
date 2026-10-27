@@ -38,6 +38,8 @@ internal static class BatchCommand
             $"O detector de fala gastou {result.VadComputeMsPerSecond.ToString("0.0", Ui.Br)} ms por segundo de áudio.",
         };
         if (monitor.GpuCountersProblem is { } problem) notes.Add($"Contadores da placa indisponíveis: {problem}");
+        var lateHint = LateHint(result.Traces, options);
+        if (lateHint is not null) notes.Add(lateHint);
 
         ReportWriter.Write(folder, new ReportInput
         {
@@ -74,11 +76,25 @@ internal static class BatchCommand
         Ui.Ok($"Pronto: {result.Traces.Count} falas detectadas, {voiced.Count} dubladas.");
         if (shortOnes.Count > 0)
             Ui.Line($"Fim da fala até a voz, falas curtas: metade em até {Ui.Seconds(shortOnes.P50)}, 95% em até {Ui.Seconds(shortOnes.P95)} (meta: {Ui.Seconds(ReportWriter.TargetP95Ms)}).");
+        if (lateHint is not null) Ui.Warn(lateHint);
         Ui.Line($"Relatório em {folder}");
         return new BatchSummary(engines.Processor.Engines.Describe(), shortOnes, result.Traces.Count, voiced.Count, resources.PeakVramMb, share, folder);
     }
 
     /// <summary>Roda a mesma gravação com cada Whisper e junta os números numa tabela.</summary>
+    /// <summary>Explica um "0 dubladas" causado por atraso, que sozinho parece defeito do programa.</summary>
+    private static string? LateHint(IReadOnlyList<UtteranceTrace> traces, RunOptions options)
+    {
+        if (traces.Any(t => t.EndToVoiceMs is not null)) return null;
+        var late = traces.Where(t => t.Dropped is StalePolicy.TooOld or StalePolicy.Overtaken).ToList();
+        if (late.Count == 0) return null;
+        var asr = LatencyStats.Summarize(late.Select(t => t.AsrMs));
+        return $"Nenhuma fala saiu a tempo: o Whisper levou {Ui.Seconds(asr.P50)} por fala (mediana), e uma fala é descartada "
+             + $"quando a voz começaria mais de {options.MaxAge.TotalSeconds.ToString("0", Ui.Br)} s depois do fim dela. Se a biblioteca "
+             + "do Whisper carregada foi Cpu, a placa de vídeo não foi usada (veja motores.log). Para ouvir a voz mesmo assim, "
+             + "rode de novo com --max-atraso 60.";
+    }
+
     public static async Task CompareAsync(string wavPath, RunOptions options, AppPaths paths)
     {
         var all = RunOptions.WhisperChoices.Values.Select(w => options with { Whisper = w }).ToList();
