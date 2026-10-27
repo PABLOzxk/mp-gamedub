@@ -65,7 +65,9 @@ dotnet publish src/MpGameDub.Teste -c Release -o publicado
 ```
 
 O CI (`.github/workflows/ci.yml`) roda os testes no Linux e no Windows, converte o Opus-MT, roda o
-exemplo de ponta a ponta na CPU e guarda o `.zip` do programa como artefato.
+exemplo de ponta a ponta na CPU e guarda a pasta do programa como artefato (o GitHub entrega zipada; baixar
+exige entrar no GitHub). O workflow `programa.yml`, disparado à mão a partir da main, publica o mesmo programa
+numa release, cujo link baixa sem login.
 O workflow `modelos.yml` publica o Opus-MT convertido numa release, só quando disparado à mão. A publicada é
 `modelos-opus-mt-v1`; o endereço, o tamanho e o SHA-256 ficam em `ModelCatalog.cs`.
 
