@@ -104,13 +104,13 @@ jobs:
           name: relatorio-exemplo
           path: publicado/relatorios
           retention-days: 14
-      - name: Empacotar sem modelos, relatórios nem gravações
+      - name: Tirar modelos e relatórios da pasta do programa
         shell: pwsh
-        run: |
-          Remove-Item -Recurse -Force publicado\modelos, publicado\relatorios -ErrorAction SilentlyContinue
-          Compress-Archive -Path publicado\* -DestinationPath MpGameDubTeste-win-x64.zip
+        run: Remove-Item -Recurse -Force publicado\modelos, publicado\relatorios -ErrorAction SilentlyContinue
+      # Sobe a pasta, não um .zip: o GitHub já entrega o artefato zipado, e um zip dentro do outro
+      # deixou o .exe escondido para quem extraiu só o de fora.
       - uses: actions/upload-artifact@v6
         with:
           name: MpGameDubTeste-win-x64
-          path: MpGameDubTeste-win-x64.zip
+          path: publicado
           retention-days: 30

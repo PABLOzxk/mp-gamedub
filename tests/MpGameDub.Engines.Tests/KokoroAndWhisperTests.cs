@@ -19,6 +19,33 @@ public partial class KokoroAndWhisperTests
     }
 
     [HeavyFact]
+    public async Task Whisper_fecha_com_uma_fala_cancelada_ainda_saindo_do_whisper_cpp()
+    {
+        // O que derrubou o programa no PC do Pablo: o prazo da etapa estoura, o Whisper.net devolve o cancelamento na
+        // hora, mas o whisper.cpp ainda está abortando a conta numa thread dele quando o programa fecha.
+        var whisper = new WhisperRecognizer(await TestModels.GetAsync(ModelCatalog.WhisperSmall), "en", useGpu: false, cpuThreads: 1);
+        var audio = TestModels.Jfk().ToMono().Resample(SpeechAudio.SampleRate).Samples;
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => whisper.RecognizeAsync(audio, cts.Token));
+
+        whisper.Dispose();
+    }
+
+    [HeavyFact]
+    public async Task Whisper_cancelado_nao_trava_a_proxima_fala()
+    {
+        using var whisper = new WhisperRecognizer(await TestModels.GetAsync(ModelCatalog.WhisperSmall), "en", useGpu: false, cpuThreads: 4);
+        var audio = TestModels.Jfk().ToMono().Resample(SpeechAudio.SampleRate).Samples;
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => whisper.RecognizeAsync(audio, cts.Token));
+
+        var transcript = await whisper.RecognizeAsync(audio, CancellationToken.None);
+
+        Assert.Contains("ask not what your country can do for you", Normalize(transcript.Text));
+    }
+
+    [HeavyFact]
     public async Task Kokoro_fala_portugues_e_o_whisper_entende()
     {
         using var kokoro = new KokoroSynthesizer(await TestModels.GetAsync(ModelCatalog.Kokoro), "pf_dora", ComputeDevice.Cpu, cpuThreads: 4);

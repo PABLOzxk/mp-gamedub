@@ -50,7 +50,9 @@ public sealed class WhisperRecognizer : ISpeechRecognizer
 
     public void Dispose()
     {
-        _processor.Dispose();
+        // Depois de um tempo esgotado, a fala cancelada ainda está saindo do whisper.cpp numa thread do Whisper.net
+        // (ele aborta no próximo passo do cálculo). O Dispose dele recusa fechar nesse meio-tempo; o DisposeAsync espera.
+        _processor.DisposeAsync().AsTask().GetAwaiter().GetResult();
         _factory.Dispose();
         _gate.Dispose();
     }

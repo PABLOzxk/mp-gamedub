@@ -46,7 +46,7 @@ internal sealed class LiveSession
     private async Task RunAsync()
     {
         using var monitor = new ResourceMonitor();
-        using var engines = EngineLoader.Load(_options, _paths);
+        using var engines = await EngineLoader.LoadAsync(_options, _paths);
         Ui.Info("Aquecendo os motores...");
         var warmup = await BatchRunner.WarmUpAsync(engines.Processor, CancellationToken.None);
 

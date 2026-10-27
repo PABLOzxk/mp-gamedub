@@ -86,7 +86,7 @@ internal static class EngineLoader
         return true;
     }
 
-    public static LoadedEngines Load(RunOptions options, AppPaths paths)
+    public static async Task<LoadedEngines> LoadAsync(RunOptions options, AppPaths paths)
     {
         var watch = Stopwatch.StartNew();
         var store = new ModelStore(paths.Models, new HttpClient());
@@ -95,11 +95,7 @@ internal static class EngineLoader
         ChooseWhisperRuntime(options.CpuOnly);
 
         var gpu = options.CpuOnly ? null : GpuAdapters.Best();
-        if (gpu is not null)
-        {
-            DirectMlAdapter.Index = gpu.Index;
-            notes.Add($"Placa usada pela voz: {gpu.Name} ({Ui.Megabytes(gpu.DedicatedMemory)}), índice DXGI {gpu.Index}.");
-        }
+        if (gpu is not null) DirectMlAdapter.Index = gpu.Index;
 
         try
         {
@@ -137,11 +133,11 @@ internal static class EngineLoader
             if (options.Speak && translator is not null)
             {
                 Ui.Info($"Carregando a voz {options.Voice}...");
-                synthesizer = CreateVoice(store.PathOf(ModelCatalog.Kokoro), options, notes);
+                synthesizer = await CreateVoiceAsync(store.PathOf(ModelCatalog.Kokoro), options, gpu, notes);
                 owned.Add(synthesizer);
             }
 
-            var processor = new UtteranceProcessor(new EngineSet(recognizer, translator, synthesizer), TimeSpan.FromSeconds(15));
+            var processor = new UtteranceProcessor(new EngineSet(recognizer, translator, synthesizer), options.StageTimeout);
             return new LoadedEngines(vad, processor, notes, owned.ToArray()) { LoadMs = watch.Elapsed.TotalMilliseconds };
         }
         catch
@@ -151,20 +147,22 @@ internal static class EngineLoader
         }
     }
 
-    private static KokoroSynthesizer CreateVoice(string modelPath, RunOptions options, List<string> notes)
+    private static async Task<ISpeechSynthesizer> CreateVoiceAsync(string modelPath, RunOptions options, GpuAdapter? gpu, List<string> notes)
     {
-        if (!options.CpuOnly)
+        KokoroSynthesizer OnCpu() => new(modelPath, options.Voice, ComputeDevice.Cpu, options.CpuThreads);
+        if (gpu is null) return OnCpu();
+
+        var opened = await VoiceFallback.OpenAsync(
+            () => new KokoroSynthesizer(modelPath, options.Voice, ComputeDevice.Gpu, options.CpuThreads), OnCpu, CancellationToken.None);
+        if (opened.OnGpu)
         {
-            try
-            {
-                return new KokoroSynthesizer(modelPath, options.Voice, ComputeDevice.Gpu, options.CpuThreads);
-            }
-            catch (Exception ex) when (ex is not OutOfMemoryException)
-            {
-                notes.Add($"A voz não abriu na placa (DirectML: {ex.Message}) e foi para a CPU, que é bem mais lenta.");
-                Ui.Warn("a voz não abriu na placa; usando a CPU.");
-            }
+            notes.Add($"Placa usada pela voz: {gpu.Name} ({Ui.Megabytes(gpu.DedicatedMemory)}), índice DXGI {gpu.Index}.");
         }
-        return new KokoroSynthesizer(modelPath, options.Voice, ComputeDevice.Cpu, options.CpuThreads);
+        else
+        {
+            notes.Add($"A voz falhou na placa {gpu.Name} (DirectML: {opened.Failure}) e foi para a CPU.");
+            Ui.Warn("a voz não funcionou na placa de vídeo; usando o processador.");
+        }
+        return opened.Synthesizer;
     }
 }

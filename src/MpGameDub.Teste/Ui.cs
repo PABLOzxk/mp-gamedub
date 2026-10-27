@@ -36,7 +36,9 @@ internal static class Ui
         {
             Console.Write(fallback is null ? $"{question} " : $"{question} [{fallback}] ");
         }
-        var answer = Console.ReadLine()?.Trim() ?? "";
+        // Com a resposta vinda de um pipe ("'s' | MpGameDubTeste.exe"), a primeira linha pode trazer a marca de
+        // ordem de bytes do UTF-8, e "\uFEFFs" não é "s".
+        var answer = Console.ReadLine()?.Replace("\uFEFF", "").Trim() ?? "";
         return answer.Length == 0 && fallback is not null ? fallback : answer;
     }
 

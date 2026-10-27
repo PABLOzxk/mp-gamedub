@@ -1,0 +1,48 @@
+name: Publicar o programa de teste
+
+# Roda só à mão, a partir da main. Monta o MpGameDubTeste.exe e, se "publicar" for marcado, cria uma release
+# com o zip e o SHA-256: o link de download da release funciona sem entrar no GitHub, o do artefato do CI não.
+on:
+  workflow_dispatch:
+    inputs:
+      publicar:
+        description: Criar a release com o zip
+        type: boolean
+        default: false
+      tag:
+        description: Nome da release
+        default: programa-fase0-v1
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Publicar o programa
+        run: dotnet publish src/MpGameDub.Teste -c Release -o publicado
+      - name: Conferir que abre
+        run: publicado\MpGameDubTeste.exe ajuda
+      - name: Zip, tamanho e SHA-256
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publicado\* -DestinationPath MpGameDubTeste-win-x64.zip
+          $hash = (Get-FileHash MpGameDubTeste-win-x64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  MpGameDubTeste-win-x64.zip" | Set-Content -Encoding ascii -NoNewline MpGameDubTeste-win-x64.zip.sha256
+          "{0} bytes" -f (Get-Item MpGameDubTeste-win-x64.zip).Length
+          Get-Content MpGameDubTeste-win-x64.zip.sha256
+      - if: inputs.publicar
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.tag }}" MpGameDubTeste-win-x64.zip MpGameDubTeste-win-x64.zip.sha256 `
+            --target "${{ github.sha }}" `
+            --title "Programa de teste da Fase 0 (${{ inputs.tag }})" `
+            --notes "MpGameDubTeste.exe para Windows 11 x64, do commit ${{ github.sha }}. Extraia numa pasta só dele e leia o LEIA-ME.txt. SHA-256 no arquivo .sha256." `
+            --prerelease
