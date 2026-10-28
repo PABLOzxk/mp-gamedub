@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Threading.Channels;
 using MpGameDub.Core.Audio;
 using MpGameDub.Core.Pipeline;
 using MpGameDub.Core.Reports;
@@ -15,15 +14,9 @@ namespace MpGameDub.Teste;
 /// </summary>
 internal sealed class LiveSession
 {
-    private sealed record Pending(SpeechSegment Segment, long SpeechEndAt, long ConfirmedAt);
-
     private readonly RunOptions _options;
     private readonly AppPaths _paths;
     private readonly AudioSessionInfo _game;
-    private readonly List<UtteranceTrace> _traces = [];
-    private readonly Dictionary<int, SynthesizedSpeech> _voices = [];
-    private readonly Channel<Pending> _queue = Channel.CreateUnbounded<Pending>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
-    private long _captureStart;
 
     private LiveSession(AudioSessionInfo game, RunOptions options, AppPaths paths)
     {
@@ -60,8 +53,10 @@ internal sealed class LiveSession
         using var cts = new CancellationTokenSource();
         using var volume = new GameVolume(_game.ProcessId, _paths.VolumeState);
         using var player = engines.Processor.Engines.Synthesizer is null ? null : new VoicePlayer(KokoroSynthesizer.SampleRate);
+        // TimeProvider.System conta no mesmo Stopwatch que a captura e a saída de som usam.
+        var worker = new LiveWorker(engines.Processor, player, new StalePolicyOptions { MaxAge = _options.MaxAge }, TimeProvider.System);
+        worker.Finished += Show;
         var capture = await ProcessAudioCapture.StartAsync(_game.ProcessId, recording);
-        _captureStart = Stopwatch.GetTimestamp();
 
         Ui.Line();
         Ui.Ok($"Ouvindo {_game.ProcessName}. Jogue normalmente; aperte Enter aqui para parar.");
@@ -69,21 +64,38 @@ internal sealed class LiveSession
         Ui.Line();
 
         var stop = GameCommands.WaitForEnter();
-        var detect = Task.Run(() => DetectAsync(capture, engines.Vad, cts.Token));
-        var work = Task.Run(() => WorkAsync(engines.Processor, player, cts.Token));
+        var detect = Task.Run(() => DetectAsync(capture, engines.Vad, worker, cts.Token));
+        var work = Task.Run(() => worker.RunAsync(cts.Token));
         var duck = player is null ? Task.CompletedTask : Task.Run(() => DuckAsync(player, volume, cts.Token));
-        var status = Task.Run(() => StatusAsync(capture, monitor, cts.Token));
+        var status = Task.Run(() => StatusAsync(capture, monitor, worker, cts.Token));
 
-        var finished = await Task.WhenAny(stop, detect, work);
-        if (finished != stop && finished.Exception is { } failure) Ui.Error(failure.InnerException?.Message ?? failure.Message);
-        await capture.DisposeAsync();
+        await Task.WhenAny(stop, detect, work);
+        var closing = capture.DisposeAsync().AsTask();
         cts.Cancel();
-        await Quietly(Task.WhenAll(detect, work, duck, status));
+        var failure = await FirstFailure(work, detect, duck, status, closing);
         volume.Restore();
         var duration = capture.Captured;
+        var traces = worker.Traces;
+        var voices = worker.Voices;
 
         Ui.Line();
-        Ui.Ok($"Parado. {_traces.Count} falas em {Ui.Clock(duration)}.");
+        if (failure is not null)
+        {
+            var log = ErrorLog.Write(_paths, failure);
+            Ui.Error($"o modo ao vivo parou: {failure.Message}");
+            Ui.Line($"Os detalhes ficaram em {log}. O relatório abaixo tem o que deu para medir até aí.");
+        }
+        else if (!stop.IsCompleted)
+        {
+            Ui.Warn("a captura do som do jogo terminou sozinha. O jogo fechou?");
+        }
+        if (!stop.IsCompleted)
+        {
+            // A espera do Enter continua lendo o teclado; sem isto, ela comeria as respostas das perguntas abaixo.
+            Ui.Info("Aperte Enter para continuar.");
+            await stop;
+        }
+        Ui.Ok($"Parado. {traces.Count} falas em {Ui.Clock(duration)}.");
         Ui.Line("Se você mediu o 1% low do jogo (FrameView ou benchmark do jogo), informe agora. Só tem o FPS médio? Use o médio nos dois.");
         var fpsOff = Ui.AskNumber("1% low com o MP GameDub FECHADO:");
         var fpsOn = fpsOff is null ? null : Ui.AskNumber("1% low com o MP GameDub LIGADO:");
@@ -94,6 +106,7 @@ internal sealed class LiveSession
             "Ao vivo: tempos medidos com o relógio real, com o jogo disputando a placa e o processador.",
             $"O fim da fala é contado pela hora em que o Windows capturou o áudio; a voz começa quando entra na saída de som (latência da saída: {player?.OutputLatency.TotalMilliseconds ?? 0:0} ms incluída).",
         };
+        if (failure is not null) notes.Add($"A sessão parou antes da hora por um erro: {failure.Message}");
         if (capture.Glitches > 0) notes.Add($"O Windows perdeu {capture.Glitches} pedaço(s) de áudio na captura (programa atrasado).");
         if (monitor.GpuCountersProblem is { } problem) notes.Add($"Contadores da placa indisponíveis: {problem}");
         if (engines.Processor.Engines.Synthesizer is not null)
@@ -105,7 +118,7 @@ internal sealed class LiveSession
             Mode = "ao vivo",
             Source = $"{_game.ProcessName} (processo {_game.ProcessId})",
             Engines = engines.Processor.Engines.Describe(),
-            Traces = _traces,
+            Traces = traces,
             AudioDuration = duration,
             When = DateTimeOffset.Now,
             Environment = SystemInfo.Describe(),
@@ -115,14 +128,14 @@ internal sealed class LiveSession
             FpsLowOff = fpsOff,
             FpsLowOn = fpsOn,
         });
-        await File.WriteAllTextAsync(Path.Combine(folder, "legendas.srt"), SubtitleWriter.Srt(_traces));
+        await File.WriteAllTextAsync(Path.Combine(folder, "legendas.srt"), SubtitleWriter.Srt(traces));
         await File.WriteAllLinesAsync(Path.Combine(folder, "motores.log"), EngineLoader.NativeLogLines);
 
-        if (recording is not null && File.Exists(recording) && _voices.Count > 0)
+        if (recording is not null && File.Exists(recording) && voices.Count > 0)
         {
             Ui.Info("Montando o dublado.wav com a gravação...");
             var clip = WavFile.Read(recording);
-            var placed = _traces.Where(t => t.VoiceStart is not null && _voices.ContainsKey(t.Id)).Select(t => (t.VoiceStart!.Value, _voices[t.Id]));
+            var placed = traces.Where(t => t.VoiceStart is not null && voices.ContainsKey(t.Id)).Select(t => (t.VoiceStart!.Value, voices[t.Id]));
             var mixed = DubbedMixer.Mix(clip, placed, new DuckingOptions { GameGain = 1f }); // o jogo já foi gravado abaixado
             WavFile.WritePcm16(Path.Combine(folder, "dublado.wav"), mixed.Samples, mixed.SampleRate, mixed.Channels);
         }
@@ -130,7 +143,7 @@ internal sealed class LiveSession
     }
 
     /// <summary>Detector de fala no ritmo da captura. Nunca espera os motores: só enfileira.</summary>
-    private async Task DetectAsync(ProcessAudioCapture capture, IVoiceActivityDetector vad, CancellationToken ct)
+    private static async Task DetectAsync(ProcessAudioCapture capture, IVoiceActivityDetector vad, LiveWorker worker, CancellationToken ct)
     {
         var slicer = new FrameSlicer(vad.FrameSize);
         var segmenter = new SpeechSegmenter(vad.FrameSize, new SegmenterOptions());
@@ -146,66 +159,15 @@ internal sealed class LiveSession
                 if (segmenter.Push(frame, vad.Process(frame)) is not { } segment) continue;
                 var confirmed = TimeOf(position);
                 var voiceEnd = confirmed - (long)(segment.ConfirmationDelay.TotalSeconds * Stopwatch.Frequency);
-                _queue.Writer.TryWrite(new Pending(segment, voiceEnd, confirmed));
+                worker.Add(new DetectedSpeech(segment, voiceEnd, confirmed));
             }
         }
         if (segmenter.Flush() is { } last)
         {
             var now = Stopwatch.GetTimestamp();
-            _queue.Writer.TryWrite(new Pending(last, now, now));
+            worker.Add(new DetectedSpeech(last, now, now));
         }
-        _queue.Writer.TryComplete();
-    }
-
-    /// <summary>Um motor, uma fala por vez, com a regra de descarte para o atraso não acumular.</summary>
-    private async Task WorkAsync(UtteranceProcessor processor, VoicePlayer? player, CancellationToken ct)
-    {
-        var stale = new StalePolicyOptions { MaxAge = _options.MaxAge };
-        var id = 0;
-        await foreach (var item in _queue.Reader.ReadAllAsync(ct))
-        {
-            var trace = new UtteranceTrace
-            {
-                Id = ++id,
-                SpeechStart = item.Segment.Start,
-                SpeechEnd = item.Segment.VoiceEnd,
-                ForcedCut = item.Segment.ForcedCut,
-                VadMs = Ms(item.ConfirmedAt - item.SpeechEndAt),
-            };
-            lock (_traces) _traces.Add(trace);
-
-            var start = Stopwatch.GetTimestamp();
-            var reason = StalePolicy.DropReason(Stopwatch.GetElapsedTime(item.SpeechEndAt, start), _queue.Reader.Count > 0, stale);
-            if (reason is not null)
-            {
-                trace.Dropped = reason;
-                Show(trace, null);
-                continue;
-            }
-
-            var voice = await processor.ProcessAsync(trace, item.Segment.Samples, ct);
-            var ready = Stopwatch.GetTimestamp();
-            if (voice is null || player is null)
-            {
-                trace.QueueMs = Ms(start - item.ConfirmedAt);
-                Show(trace, null);
-                continue;
-            }
-
-            if (Stopwatch.GetElapsedTime(item.SpeechEndAt, player.NextStartAt) > stale.MaxAge)
-            {
-                trace.Dropped = StalePolicy.TooOld;
-                trace.QueueMs = Ms(start - item.ConfirmedAt);
-                Show(trace, null);
-                continue;
-            }
-            var (startsAt, _) = player.Enqueue(voice);
-            trace.QueueMs = Ms(start - item.ConfirmedAt) + Ms(startsAt - ready);
-            trace.EndToVoiceMs = Ms(startsAt - item.SpeechEndAt);
-            trace.VoiceStart = trace.SpeechEnd + TimeSpan.FromMilliseconds(trace.EndToVoiceMs.Value);
-            lock (_voices) _voices[trace.Id] = voice;
-            Show(trace, trace.EndToVoiceMs);
-        }
+        worker.Complete();
     }
 
     /// <summary>Abaixa o jogo enquanto há voz para tocar e devolve um pouco depois de ela acabar.</summary>
@@ -231,20 +193,19 @@ internal sealed class LiveSession
         }
     }
 
-    private async Task StatusAsync(ProcessAudioCapture capture, ResourceMonitor monitor, CancellationToken ct)
+    private static async Task StatusAsync(ProcessAudioCapture capture, ResourceMonitor monitor, LiveWorker worker, CancellationToken ct)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
         while (await timer.WaitForNextTickAsync(ct))
         {
-            int count;
-            lock (_traces) count = _traces.Count;
+            var count = worker.Count;
             var last = monitor.Last;
             var vram = last?.VramMb is { } v ? v.ToString("0", Ui.Br) + " MB" : "?";
             Ui.Line($"  [{Ui.Clock(capture.Captured)}] falas {count} | memória da placa {vram} | CPU {last?.CpuPercent ?? 0:0}% | perdas de áudio {capture.Glitches}", ConsoleColor.DarkGray);
         }
     }
 
-    private void Show(UtteranceTrace t, double? endToVoice)
+    private static void Show(UtteranceTrace t)
     {
         var at = Ui.Clock(t.SpeechStart);
         if (t.Original.Length > 0) Ui.Line($"[{at}] EN  {t.Original}", ConsoleColor.Gray);
@@ -253,20 +214,21 @@ internal sealed class LiveSession
             Ui.Line($"        --  {t.Dropped}", ConsoleColor.DarkYellow);
             return;
         }
-        var delay = endToVoice is { } ms ? $"   ({Ui.Seconds(ms)})" : "";
+        var delay = t.EndToVoiceMs is { } ms ? $"   ({Ui.Seconds(ms)})" : "";
         Ui.Line($"        PT  {t.Translation}{delay}", ConsoleColor.White);
     }
 
-    private static double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
-
-    private static async Task Quietly(Task task)
+    /// <summary>Espera todas e devolve o primeiro erro que não seja o cancelamento do fim da sessão.</summary>
+    private static async Task<Exception?> FirstFailure(params Task[] tasks)
     {
         try
         {
-            await task;
+            await Task.WhenAll(tasks);
         }
-        catch (OperationCanceledException)
+        catch (Exception)
         {
+            // Os erros são lidos de cada tarefa abaixo; o WhenAll só devolveria o primeiro.
         }
+        return tasks.Select(t => t.Exception?.InnerException).FirstOrDefault(e => e is not null and not OperationCanceledException);
     }
 }

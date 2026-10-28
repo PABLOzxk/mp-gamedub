@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using MpGameDub.Core.Pipeline;
 using MpGameDub.Core.Speech;
 using NAudio.Wave;
 
@@ -12,7 +13,7 @@ namespace MpGameDub.Windows;
 /// latência da saída, para medir o atraso real.
 /// </summary>
 [SupportedOSPlatform("windows")]
-public sealed class VoicePlayer : IDisposable
+public sealed class VoicePlayer : IVoiceOutput, IDisposable
 {
     private readonly WasapiPlayer _player;
     private readonly BufferedWaveProvider _buffer;
@@ -40,13 +41,13 @@ public sealed class VoicePlayer : IDisposable
     /// <summary>Quando (Stopwatch) uma fala posta na fila agora começaria a soar.</summary>
     public long NextStartAt => Stopwatch.GetTimestamp() + (long)((_buffer.BufferedDuration + OutputLatency).TotalSeconds * Stopwatch.Frequency);
 
-    /// <summary>Põe a fala na fila e devolve o Stopwatch de quando ela deve começar a soar e quanto dura.</summary>
-    public (long StartsAt, TimeSpan Duration) Enqueue(SynthesizedSpeech speech)
+    /// <summary>Põe a fala na fila e devolve o Stopwatch de quando ela deve começar a soar.</summary>
+    public long Enqueue(SynthesizedSpeech speech)
     {
         if (speech.SampleRate != _rate) throw new ArgumentException($"A voz deve vir em {_rate} Hz.", nameof(speech));
         var startsAt = NextStartAt;
         _buffer.AddSamples(MemoryMarshal.AsBytes(speech.Samples.AsSpan()));
-        return (startsAt, speech.Duration);
+        return startsAt;
     }
 
     public void Clear() => _buffer.ClearBuffer();

@@ -24,8 +24,7 @@ try
 }
 catch (Exception ex) when (ex is not OutOfMemoryException)
 {
-    var log = Path.Combine(paths.Root, "erro.txt");
-    File.WriteAllText(log, $"{DateTime.Now:O}\n{ex}\n\nMotores:\n{string.Join('\n', EngineLoader.NativeLogLines)}");
+    var log = ErrorLog.Write(paths, ex);
     Ui.Error(ex.Message);
     Ui.Line($"Os detalhes ficaram em {log}. Mande esse arquivo junto com o que você estava fazendo.");
     Ui.Pause();
@@ -34,6 +33,17 @@ catch (Exception ex) when (ex is not OutOfMemoryException)
 
 namespace MpGameDub.Teste
 {
+    /// <summary>O erro.txt para mandar quando algo dá errado: a exceção inteira e o log dos motores.</summary>
+    internal static class ErrorLog
+    {
+        public static string Write(AppPaths paths, Exception ex)
+        {
+            var log = Path.Combine(paths.Root, "erro.txt");
+            File.WriteAllText(log, $"{DateTime.Now:O}\n{ex}\n\nMotores:\n{string.Join('\n', EngineLoader.NativeLogLines)}");
+            return log;
+        }
+    }
+
     internal static class Commands
     {
         private const string Usage = """
