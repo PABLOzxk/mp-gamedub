@@ -68,11 +68,17 @@ internal sealed class LiveSession
         var work = Task.Run(() => worker.RunAsync(cts.Token));
         var duck = player is null ? Task.CompletedTask : Task.Run(() => DuckAsync(player, volume, cts.Token));
         var status = Task.Run(() => StatusAsync(capture, monitor, worker, cts.Token));
+        // A captura fica presa ao processo escolhido: se o jogo fechar, ela só recebe silêncio, sem erro nenhum.
+        // Sem o nome do processo (a lista mostra "processo N"), não dá para acompanhar, e a sessão só para no Enter.
+        var gameGone = GameExit.IsRunning((int)_game.ProcessId, _game.ProcessName)
+            ? GameExit.WaitAsync((int)_game.ProcessId, _game.ProcessName, TimeSpan.FromSeconds(2), cts.Token)
+            : Task.Delay(Timeout.Infinite, cts.Token);
 
-        await Task.WhenAny(stop, detect, work);
+        await Task.WhenAny(stop, detect, work, gameGone);
+        var gameClosed = gameGone.IsCompletedSuccessfully;
         var closing = capture.DisposeAsync().AsTask();
         cts.Cancel();
-        var failure = await FirstFailure(work, detect, duck, status, closing);
+        var failure = await FirstFailure(work, detect, duck, status, gameGone, closing);
         volume.Restore();
         var duration = capture.Captured;
         var traces = worker.Traces;
@@ -84,6 +90,10 @@ internal sealed class LiveSession
             var log = ErrorLog.Write(_paths, failure);
             Ui.Error($"o modo ao vivo parou: {failure.Message}");
             Ui.Line($"Os detalhes ficaram em {log}. O relatório abaixo tem o que deu para medir até aí.");
+        }
+        else if (gameClosed)
+        {
+            Ui.Warn($"o {_game.ProcessName} fechou, e a sessão parou junto. Para continuar, abra o jogo de novo e comece outra sessão ao vivo.");
         }
         else if (!stop.IsCompleted)
         {
@@ -107,6 +117,7 @@ internal sealed class LiveSession
             $"O fim da fala é contado pela hora em que o Windows capturou o áudio; a voz começa quando entra na saída de som (latência da saída: {player?.OutputLatency.TotalMilliseconds ?? 0:0} ms incluída).",
         };
         if (failure is not null) notes.Add($"A sessão parou antes da hora por um erro: {failure.Message}");
+        if (gameClosed) notes.Add($"O jogo fechou em {Ui.Clock(duration)} de áudio, e a sessão parou junto.");
         if (capture.Glitches > 0) notes.Add($"O Windows perdeu {capture.Glitches} pedaço(s) de áudio na captura (programa atrasado).");
         if (monitor.GpuCountersProblem is { } problem) notes.Add($"Contadores da placa indisponíveis: {problem}");
         if (engines.Processor.Engines.Synthesizer is not null)
