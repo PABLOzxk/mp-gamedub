@@ -12,7 +12,8 @@ public sealed record DuckingOptions
 
 /// <summary>
 /// Monta o áudio de comparação: o som original, abaixado enquanto a voz traduzida fala, com a voz posta no
-/// instante em que teria começado ao vivo. É o arquivo para ouvir e decidir se o resultado presta.
+/// instante em que teria começado ao vivo. É o arquivo para ouvir e decidir se o resultado presta. Se a última voz
+/// passa do fim da gravação (ao vivo, o jogo continuaria), o arquivo estica em silêncio até ela acabar.
 /// </summary>
 public static class DubbedMixer
 {
@@ -20,16 +21,15 @@ public static class DubbedMixer
     {
         var rate = original.SampleRate;
         var channels = original.Channels;
-        var frames = original.Frames;
         var placed = voices
-            .Select(v => (Start: (long)(v.Start.TotalSeconds * rate), Samples: StreamingResampler.Convert(v.Voice.Samples, v.Voice.SampleRate, rate)))
-            .Where(v => v.Start < frames)
+            .Select(v => (Start: (int)(v.Start.TotalSeconds * rate), Samples: StreamingResampler.Convert(v.Voice.Samples, v.Voice.SampleRate, rate)))
             .ToList();
+        var frames = placed.Select(v => v.Start + v.Samples.Length).Append(original.Frames).Max();
 
         var gain = new float[frames];
         Array.Fill(gain, 1f);
-        var attack = (long)(ducking.Attack.TotalSeconds * rate);
-        var release = (long)(ducking.Release.TotalSeconds * rate);
+        var attack = (int)(ducking.Attack.TotalSeconds * rate);
+        var release = (int)(ducking.Release.TotalSeconds * rate);
         foreach (var (start, samples) in placed)
         {
             var end = start + samples.Length;
@@ -42,13 +42,13 @@ public static class DubbedMixer
             }
         }
 
-        var output = new float[original.Samples.Length];
-        for (var f = 0; f < frames; f++)
+        var output = new float[frames * channels];
+        for (var f = 0; f < original.Frames; f++)
             for (var c = 0; c < channels; c++)
                 output[f * channels + c] = original.Samples[f * channels + c] * gain[f];
 
         foreach (var (start, samples) in placed)
-            for (var i = 0; i < samples.Length && start + i < frames; i++)
+            for (var i = 0; i < samples.Length; i++)
                 for (var c = 0; c < channels; c++)
                     output[(start + i) * channels + c] += samples[i];
 

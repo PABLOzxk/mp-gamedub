@@ -28,14 +28,34 @@ public class DubbedMixerTests
     }
 
     [Fact]
-    public void Voz_que_comeca_depois_do_fim_e_ignorada_e_soma_nao_estoura()
+    public void Soma_nao_estoura()
     {
         var game = new AudioClip(Enumerable.Repeat(0.9f, 16000).ToArray(), 16000, 1);
         var loud = new SynthesizedSpeech(Enumerable.Repeat(0.9f, 8000).ToArray(), 16000);
 
-        var mixed = DubbedMixer.Mix(game, [(TimeSpan.FromSeconds(0.5), loud), (TimeSpan.FromSeconds(5), loud)], new DuckingOptions { GameGain = 1f });
+        var mixed = DubbedMixer.Mix(game, [(TimeSpan.FromSeconds(0.5), loud)], new DuckingOptions { GameGain = 1f });
 
         Assert.All(mixed.Samples, s => Assert.InRange(s, -1f, 1f));
         Assert.Equal(1f, mixed.Samples[12000]);
+        Assert.Equal(game.Samples.Length, mixed.Samples.Length);
+    }
+
+    [Fact]
+    public void Voz_que_passa_do_fim_da_gravacao_estica_o_audio_ate_ela_acabar()
+    {
+        // O que cortou a última fala do exemplo: a voz começava 1,2 s depois do fim da gravação e sumia.
+        const int rate = 8000;
+        var game = new AudioClip(Enumerable.Repeat(0.2f, 2 * rate * 2).ToArray(), rate, 2);
+        var voice = new SynthesizedSpeech(Enumerable.Repeat(0.1f, rate).ToArray(), rate);
+        var ducking = new DuckingOptions { GameGain = 0.5f, Attack = TimeSpan.FromMilliseconds(100), Release = TimeSpan.FromMilliseconds(100) };
+
+        var mixed = DubbedMixer.Mix(game, [(TimeSpan.FromSeconds(1.5), voice), (TimeSpan.FromSeconds(3), voice)], ducking);
+
+        Assert.Equal(4 * rate * 2, mixed.Samples.Length);
+        float At(double seconds, int channel) => mixed.Samples[(int)(seconds * rate) * 2 + channel];
+        Assert.Equal(0.2f * 0.5f + 0.1f, At(1.8, 0), 4);  // dentro da gravação: jogo abaixado + voz
+        Assert.Equal(0.1f, At(2.2, 0), 4);                 // a primeira voz continua depois do fim do jogo
+        Assert.Equal(0f, At(2.8, 1), 4);                   // entre as duas: silêncio
+        Assert.Equal(0.1f, At(3.5, 1), 4);                 // a voz que começa depois do fim entra inteira
     }
 }
