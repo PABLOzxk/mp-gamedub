@@ -10,7 +10,8 @@ public sealed record FilterResult(bool Accepted, string Text, string? Reason)
 
 /// <summary>
 /// Limpa o texto do reconhecimento e descarta o que o Whisper costuma inventar em música, ruído e silêncio
-/// (frases de fim de vídeo, créditos de legenda, a mesma palavra repetida).
+/// (frases de fim de vídeo, créditos de legenda, a mesma palavra repetida), e falas que são só som de boca
+/// ("Hmm.", "Um...", "Eesh!"): dublar isso não ajuda ninguém e ocupa a voz enquanto a próxima fala espera.
 /// </summary>
 public static partial class TranscriptFilter
 {
@@ -44,6 +45,7 @@ public static partial class TranscriptFilter
 
         var words = Words().Matches(lower).Select(m => m.Value).ToArray();
         if (words.Length >= 4 && words.Distinct().Count() == 1) return FilterResult.Reject(text, "mesma palavra repetida");
+        if (words.All(Interjection().IsMatch)) return FilterResult.Reject(text, "só interjeição");
         return FilterResult.Accept(text);
     }
 
@@ -56,4 +58,8 @@ public static partial class TranscriptFilter
 
     [GeneratedRegex(@"\p{L}+")]
     private static partial Regex Words();
+
+    // hmm, mm, um, uh, uh-huh, mm-hmm, er, erm, ah, oh, eh, huh, ugh, eesh, shh, psst, whoa
+    [GeneratedRegex(@"^(h*m+|u+[hm]+|h+u+h+|e+r+m*|a+h+|o+h+|e+h+|u+g+h+|e+s+h+|s+h+|p+s+t+|w+h?o+a+h*)$")]
+    private static partial Regex Interjection();
 }
