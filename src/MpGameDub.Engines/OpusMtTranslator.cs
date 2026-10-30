@@ -86,7 +86,7 @@ public sealed partial class OpusMtTranslator : ITranslator
     internal string Decode(IEnumerable<int> ids)
     {
         var pieces = ids.Where(id => id != _eos && id != _pad && id < _pieces.Length).Select(id => _pieces[id]);
-        return string.Concat(pieces).Replace('▁', ' ').Trim();
+        return UnknownLetters.Repair(string.Concat(pieces).Replace('▁', ' ').Trim(), _vocab);
     }
 
     private string Translate(string text, CancellationToken ct)

@@ -37,6 +37,16 @@ public class OpusMtTests
     }
 
     [OpusMtFact]
+    public async Task Maiuscula_com_acento_nao_vira_unk()
+    {
+        // O vocabulário não tem "Ó" nem "À": sem o conserto, sairiam "<unk>timo" e "<unk> noite".
+        using var translator = new OpusMtTranslator(Folder!, ComputeDevice.Cpu, cpuThreads: 4);
+        Assert.Equal("Ótimo trabalho, Jimmy.", await translator.TranslateAsync("Great job, Jimmy.", CancellationToken.None));
+        Assert.Equal("À noite, saímos.", await translator.TranslateAsync("At night, we go out.", CancellationToken.None));
+        Assert.Equal("Às vezes eu choro.", await translator.TranslateAsync("Sometimes I cry.", CancellationToken.None));
+    }
+
+    [OpusMtFact]
     public async Task Texto_vazio_nao_chama_o_modelo()
     {
         using var translator = new OpusMtTranslator(Folder!, ComputeDevice.Cpu, cpuThreads: 1);
