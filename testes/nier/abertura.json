@@ -1,0 +1,390 @@
+{
+ "cena": "Prólogo do NieR:Automata, começo do voo (M0010_S0005 e M0010_S0010)",
+ "falas": [
+  {
+   "evento": "M0010_S0005_S0000_101_a2b",
+   "personagem": "2B",
+   "ingles": "Everything that lives is designed to end.",
+   "legenda_pt": "Tudo o que vive foi feito para acabar.",
+   "falado_pt": "Tudo o que vive foi feito para acabar.",
+   "wem_ids_candidatos": [
+    293451308,
+    918278216
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0010_001_a2b",
+   "personagem": "2B",
+   "ingles": "We are perpetually trapped...",
+   "legenda_pt": "Estamos eternamente presos...",
+   "falado_pt": "Estamos eternamente presos...",
+   "wem_ids_candidatos": [
+    939663302,
+    966868997
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0020_001_a2b",
+   "personagem": "2B",
+   "ingles": "in a never-ending spiral of life and death.",
+   "legenda_pt": "numa espiral sem fim de vida e morte.",
+   "falado_pt": "numa espiral sem fim de vida e morte.",
+   "wem_ids_candidatos": [
+    216900152,
+    829316911
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0030_001_a2b",
+   "personagem": "2B",
+   "ingles": "Is this a curse?",
+   "legenda_pt": "Isso é uma maldição?",
+   "falado_pt": "Isso é uma maldição?",
+   "wem_ids_candidatos": [
+    651783774,
+    1005262898
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0040_001_a2b",
+   "personagem": "2B",
+   "ingles": "Or some kind of punishment?",
+   "legenda_pt": "Ou algum tipo de castigo?",
+   "falado_pt": "Ou algum tipo de castigo?",
+   "wem_ids_candidatos": [
+    295099073,
+    520825204
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0050_001_a2b",
+   "personagem": "2B",
+   "ingles": "I often think about the god who blessed us with this cryptic puzzle...",
+   "legenda_pt": "Muitas vezes penso no deus que nos deu este enigma...",
+   "falado_pt": "Muitas vezes penso no deus que nos deu este enigma...",
+   "wem_ids_candidatos": [
+    561569336,
+    873753054
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0060_001_a2b",
+   "personagem": "2B",
+   "ingles": "and wonder if we'll ever have the chance to kill him.",
+   "legenda_pt": "e me pergunto se um dia teremos a chance de matá-lo.",
+   "falado_pt": "e me pergunto se um dia teremos a chance de matá-lo.",
+   "wem_ids_candidatos": [
+    587669564,
+    743478443
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0070_001_op60",
+   "personagem": "Operator 6O",
+   "ingles": "This is Command. YoRHa squadron, come in.",
+   "legenda_pt": "Aqui é o Comando. Esquadrão YoRHa, responda.",
+   "falado_pt": "Aqui é o Comando. Esquadrão Iórha, responda.",
+   "wem_ids_candidatos": [
+    437746887,
+    1070177205
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0080_001_a2b",
+   "personagem": "2B",
+   "ingles": "2B here. All units have penetrated the stratosphere.",
+   "legenda_pt": "Aqui é 2B. Todas as unidades atravessaram a estratosfera.",
+   "falado_pt": "Aqui é Dois-Bê. Todas as unidades atravessaram a estratosfera.",
+   "wem_ids_candidatos": [
+    16564758,
+    305616630
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0090_001_a2b",
+   "personagem": "2B",
+   "ingles": "Autopilot systems green across the board.",
+   "legenda_pt": "Piloto automático normal em todas as unidades.",
+   "falado_pt": "Piloto automático normal em todas as unidades.",
+   "wem_ids_candidatos": [
+    606702676,
+    750692544
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0100_001_op60",
+   "personagem": "Operator 6O",
+   "ingles": "This is Operator 6O. All units confirmed.",
+   "legenda_pt": "Aqui é a Operadora 6O. Todas as unidades confirmadas.",
+   "falado_pt": "Aqui é a Operadora Seis-Ó. Todas as unidades confirmadas.",
+   "wem_ids_candidatos": [
+    320567738,
+    580689146
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0110_001_a2b",
+   "personagem": "2B",
+   "ingles": "We've passed the 50-kilometer threshold and are proceeding toward the target.",
+   "legenda_pt": "Passamos da marca de 50 quilômetros e seguimos para o alvo.",
+   "falado_pt": "Passamos da marca de cinquenta quilômetros e seguimos para o alvo.",
+   "wem_ids_candidatos": [
+    163532866,
+    207793000
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0120_001_op60",
+   "personagem": "Operator 6O",
+   "ingles": "Understood. Once you reach their anti-air defenses, proceed to manual-attack formation...",
+   "legenda_pt": "Entendido. Ao chegar à defesa antiaérea, passem para a formação de ataque manual...",
+   "falado_pt": "Entendido. Ao chegar à defesa antiaérea, passem para a formação de ataque manual...",
+   "wem_ids_candidatos": [
+    147440679,
+    508187646
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0130_001_op60",
+   "personagem": "Operator 6O",
+   "ingles": "then destroy the Goliath-class unit by any means necessary and gather what data you can.",
+   "legenda_pt": "e destruam a unidade classe Golias a qualquer custo e coletem o máximo de dados.",
+   "falado_pt": "e destruam a unidade classe Golias a qualquer custo e coletem o máximo de dados.",
+   "wem_ids_candidatos": [
+    823495793,
+    986000974
+   ]
+  },
+  {
+   "evento": "M0010_S0005_S0140_001_a2b",
+   "personagem": "2B",
+   "ingles": "Understood.",
+   "legenda_pt": "Entendido.",
+   "falado_pt": "Entendido.",
+   "wem_ids_candidatos": [
+    146065161,
+    829444082
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0000_101_a2b",
+   "personagem": "2B",
+   "ingles": "12H down.",
+   "legenda_pt": "12H caiu.",
+   "falado_pt": "Doze-Agá caiu.",
+   "wem_ids_candidatos": [
+    46777947,
+    247610443
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0010_001_a2b",
+   "personagem": "2B",
+   "ingles": "All units, activate manual mode and rely on visuals to evade.",
+   "legenda_pt": "Todas as unidades, ativem o modo manual e usem a visão para desviar.",
+   "falado_pt": "Todas as unidades, ativem o modo manual e usem a visão para desviar.",
+   "wem_ids_candidatos": [
+    770266618,
+    1002288960
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0020_001_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Already engaged. Free movement unlocked.",
+   "legenda_pt": "Já em combate. Movimento livre ativado.",
+   "falado_pt": "Já em combate. Movimento livre ativado.",
+   "wem_ids_candidatos": [
+    395203689,
+    839241736
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0030_001_a1d",
+   "personagem": "1D",
+   "ingles": "Origin point of long-range lasers confirmed.",
+   "legenda_pt": "Origem dos lasers de longo alcance confirmada.",
+   "falado_pt": "Origem dos lasers de longo alcance confirmada.",
+   "wem_ids_candidatos": [
+    117773739,
+    221057579
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0050_001_a1d",
+   "personagem": "1D",
+   "ingles": "11B down.",
+   "legenda_pt": "11B caiu.",
+   "falado_pt": "Onze-Bê caiu.",
+   "wem_ids_candidatos": [
+    335063575,
+    577546508
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0060_001_a1d",
+   "personagem": "1D",
+   "ingles": "Our Ho229 cancellers are ineffective.",
+   "legenda_pt": "Os anuladores dos Ho229 não funcionam.",
+   "falado_pt": "Os anuladores dos Agá-Ó dois-dois-nove não funcionam.",
+   "wem_ids_candidatos": [
+    528376618,
+    559648072
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0070_001_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Alert: Enemy units sighted ahead.",
+   "legenda_pt": "Alerta: unidades inimigas à frente.",
+   "falado_pt": "Alerta: unidades inimigas à frente.",
+   "wem_ids_candidatos": [
+    107843256,
+    993590411
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0080_001_a2b",
+   "personagem": "2B",
+   "ingles": "Requesting permission to engage.",
+   "legenda_pt": "Solicito permissão para atacar.",
+   "falado_pt": "Solicito permissão para atacar.",
+   "wem_ids_candidatos": [
+    26277267,
+    200937161
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0090_001_op60",
+   "personagem": "Operator 6O",
+   "ingles": "Permission granted!",
+   "legenda_pt": "Permissão concedida!",
+   "falado_pt": "Permissão concedida!",
+   "wem_ids_candidatos": [
+    181941786,
+    670529819
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0100_001_a1d",
+   "personagem": "1D",
+   "ingles": "7E down.",
+   "legenda_pt": "7E caiu.",
+   "falado_pt": "Sete-É caiu.",
+   "wem_ids_candidatos": [
+    726386366,
+    975983168
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0110_001_a2b",
+   "personagem": "2B",
+   "ingles": "1D down. Assuming captain's duties.",
+   "legenda_pt": "1D caiu. Assumindo o comando.",
+   "falado_pt": "Um-Dê caiu. Assumindo o comando.",
+   "wem_ids_candidatos": [
+    631459034,
+    1060945887
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0120_001_a2b",
+   "personagem": "2B",
+   "ingles": "Multiple surrounding enemy air units confirmed. Requesting permission to assume mobile configuration.",
+   "legenda_pt": "Várias unidades aéreas inimigas ao redor. Solicito permissão para passar ao modo móvel.",
+   "falado_pt": "Várias unidades aéreas inimigas ao redor. Solicito permissão para passar ao modo móvel.",
+   "wem_ids_candidatos": [
+    638891912,
+    842008261
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0140_001_a4b",
+   "personagem": "4B",
+   "ingles": "Captain, I think—",
+   "legenda_pt": "Capitã, acho que—",
+   "falado_pt": "Capitã, acho que...",
+   "wem_ids_candidatos": [
+    549399702,
+    755016982
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0150_001_a2b",
+   "personagem": "2B",
+   "ingles": "...4B down.",
+   "legenda_pt": "...4B caiu.",
+   "falado_pt": "... Quatro-Bê caiu.",
+   "wem_ids_candidatos": [
+    134302230,
+    262025535
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0160_001_a2b",
+   "personagem": "2B",
+   "ingles": "2B to Operator 6O.",
+   "legenda_pt": "2B para Operadora 6O.",
+   "falado_pt": "Dois-Bê para Operadora Seis-Ó.",
+   "wem_ids_candidatos": [
+    900996497,
+    939757824
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0170_001_a2b",
+   "personagem": "2B",
+   "ingles": "All allied units down.",
+   "legenda_pt": "Todas as unidades aliadas caíram.",
+   "falado_pt": "Todas as unidades aliadas caíram.",
+   "wem_ids_candidatos": [
+    477659391,
+    1051250555
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0180_001_a2b",
+   "personagem": "2B",
+   "ingles": "The operation is compromised. Awaiting further orders.",
+   "legenda_pt": "A operação foi comprometida. Aguardando ordens.",
+   "falado_pt": "A operação foi comprometida. Aguardando ordens.",
+   "wem_ids_candidatos": [
+    397195168,
+    871719634
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0190_001_op60",
+   "personagem": "Operator 6O",
+   "ingles": "O-Operator to 2B.",
+   "legenda_pt": "O-Operadora para 2B.",
+   "falado_pt": "O... Operadora para Dois-Bê.",
+   "wem_ids_candidatos": [
+    256754795,
+    620550976
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0200_001_op60",
+   "personagem": "Operator 6O",
+   "ingles": "We need you to rendezvous with unit 9S and begin gathering data on the local terrain.",
+   "legenda_pt": "Encontre a unidade 9S e comece a coletar dados do terreno.",
+   "falado_pt": "Encontre a unidade Nove-Esse e comece a coletar dados do terreno.",
+   "wem_ids_candidatos": [
+    309783323,
+    375409554
+   ]
+  },
+  {
+   "evento": "M0010_S0010_G0210_001_a2b",
+   "personagem": "2B",
+   "ingles": "Understood.",
+   "legenda_pt": "Entendido.",
+   "falado_pt": "Entendido.",
+   "wem_ids_candidatos": [
+    469672707,
+    961877982
+   ]
+  }
+ ]
+}
