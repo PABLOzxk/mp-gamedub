@@ -1,0 +1,124 @@
+{
+ "cenas": "Prólogo: ev0010 (+ fim em ev0011) e ev0030; ids casam com os SMD _us",
+ "falas": [
+  {
+   "id": "M0010_S0050_H0000_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Alert: Heavy damage to Ho229 flight unit.",
+   "legenda_pt": "Alerta: danos graves na unidade de voo Ho229.",
+   "falado_pt": "Alerta: danos graves na unidade de voo Agá-Ó dois-dois-nove."
+  },
+  {
+   "id": "M0010_S0050_H0010_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Flight-control systems abandoned.",
+   "legenda_pt": "Sistemas de controle de voo abandonados.",
+   "falado_pt": "Sistemas de controle de voo abandonados."
+  },
+  {
+   "id": "M0010_S0050_H0020_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Standard comm systems down.",
+   "legenda_pt": "Comunicação padrão fora do ar.",
+   "falado_pt": "Comunicação padrão fora do ar."
+  },
+  {
+   "id": "M0010_S0050_H0030_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Laser comm system activated.",
+   "legenda_pt": "Comunicação a laser ativada.",
+   "falado_pt": "Comunicação a laser ativada."
+  },
+  {
+   "id": "M0010_S0050_H0040_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Confirming terrain...long-range.",
+   "legenda_pt": "Confirmando terreno... longo alcance.",
+   "falado_pt": "Confirmando terreno... longo alcance."
+  },
+  {
+   "id": "M0010_S0050_H0050_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Transferring FCS control.",
+   "legenda_pt": "Transferindo controle do FCS.",
+   "falado_pt": "Transferindo controle do Efe-Cê-Esse."
+  },
+  {
+   "id": "M0010_S0050_H0060_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Transferring IMU control.",
+   "legenda_pt": "Transferindo controle da IMU.",
+   "falado_pt": "Transferindo controle da I-Eme-U."
+  },
+  {
+   "id": "M0010_S0050_H0070_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Activating FFCS.",
+   "legenda_pt": "Ativando FFCS.",
+   "falado_pt": "Ativando Efe-Efe-Cê-Esse."
+  },
+  {
+   "id": "M0010_S0050_H0080_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Activating NFCS.",
+   "legenda_pt": "Ativando NFCS.",
+   "falado_pt": "Ativando Ene-Efe-Cê-Esse."
+  },
+  {
+   "id": "M0010_S0050_H0090_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Initiating 2B vitals recheck sequence.",
+   "legenda_pt": "Iniciando nova checagem dos sinais vitais de 2B.",
+   "falado_pt": "Iniciando nova checagem dos sinais vitais de Dois-Bê."
+  },
+  {
+   "id": "M0010_S0050_H0100_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Initiating short-range radio-wave camouflage.",
+   "legenda_pt": "Iniciando camuflagem de ondas de rádio de curto alcance.",
+   "falado_pt": "Iniciando camuflagem de ondas de rádio de curto alcance."
+  },
+  {
+   "id": "M0010_S0050_H0110_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Activating short-range attack gear.",
+   "legenda_pt": "Ativando equipamento de ataque de curto alcance.",
+   "falado_pt": "Ativando equipamento de ataque de curto alcance."
+  },
+  {
+   "id": "M0010_S0050_H0120_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Confirming 2B black box signal.",
+   "legenda_pt": "Confirmando sinal da caixa-preta de 2B.",
+   "falado_pt": "Confirmando sinal da caixa-preta de Dois-Bê."
+  },
+  {
+   "id": "M0010_S0050_H0130_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Alert: Large enemy group detected.",
+   "legenda_pt": "Alerta: grande grupo inimigo detectado.",
+   "falado_pt": "Alerta: grande grupo inimigo detectado."
+  },
+  {
+   "id": "M0010_S0050_H0140_101_a2b",
+   "personagem": "2B",
+   "ingles": "Yes, I'm aware of that.",
+   "legenda_pt": "Sim, já percebi.",
+   "falado_pt": "Sim, já percebi."
+  },
+  {
+   "id": "M0010_S0090_H0000_101_pod042",
+   "personagem": "Pod 042",
+   "ingles": "Enemies destroyed.",
+   "legenda_pt": "Inimigos destruídos.",
+   "falado_pt": "Inimigos destruídos."
+  },
+  {
+   "id": "M0010_S0090_H0010_101_a2b",
+   "personagem": "2B",
+   "ingles": "Not quite.",
+   "legenda_pt": "Ainda não.",
+   "falado_pt": "Ainda não."
+  }
+ ]
+}
